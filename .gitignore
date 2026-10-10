@@ -1,0 +1,8 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Ultibot runtime artifacts (PLAN §12)
+logs/
+maps/

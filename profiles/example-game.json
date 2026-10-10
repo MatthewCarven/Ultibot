@@ -1,0 +1,103 @@
+{
+  "profile": "example-game",
+  "settings": {
+    "tick_rate_hz": 20,
+    "kill_hotkey": "f9",
+    "max_actions_per_minute": 120,
+    "humanize": { "click_jitter_px": 3, "action_delay_ms": [40, 120] }
+  },
+
+  "sensors": {
+    "health": {
+      "anchor": "healthbar_frame.png",
+      "offset": [12, 4],
+      "size": [80, 20],
+      "type": "number"
+    }
+  },
+
+  "macros": {
+    "retreat_to_safety": [
+      { "type": "random_key", "keys": ["s"], "hold_ms": [1500, 2500] },
+      { "type": "wait", "ms": [300, 600] }
+    ]
+  },
+
+  "groups": {
+    "failsafe-random": {
+      "failsafe": true,
+      "steps": [
+        { "type": "choose", "options": [
+          { "weight": 4, "actions": [
+            { "type": "random_key", "keys": ["w", "a", "s", "d"], "hold_ms": [300, 900] }
+          ]},
+          { "weight": 1, "actions": [ { "$ref": "check-inventory" } ]},
+          { "weight": 2, "actions": [ { "type": "wait", "ms": [400, 1200] } ]}
+        ]}
+      ]
+    },
+    "check-inventory": [
+      { "type": "key", "key": "i" },
+      { "type": "wait", "ms": [400, 800] },
+      { "type": "key", "key": "i" }
+    ],
+    "conduct": [
+      { "type": "veto", "groups": ["combat"], "reason": "their kill, not mine" }
+    ],
+    "combat": {
+      "cooldown_ms": 750,
+      "steps": [
+        { "type": "key", "key": "1" }
+      ]
+    },
+    "menu-navigation": [
+      { "type": "key", "key": "esc",
+        "verify": { "image": "menu_closed.png" },
+        "retry": { "attempts": 2 } }
+    ],
+    "emergency-survival": [
+      { "type": "key", "key": "1",
+        "verify": { "stat": ["health", ">", 0] },
+        "retry": { "attempts": 2, "backoff_ms": [200, 500] } },
+      { "type": "run_macro", "name": "retreat_to_safety" }
+    ],
+    "looting": {
+      "cooldown_ms": 500,
+      "steps": [
+        { "type": "click", "target": "match" },
+        { "type": "wait", "ms": [200, 400] }
+      ]
+    },
+    "idle-wander": [
+      { "type": "random_key", "keys": ["w", "a", "s", "d"], "hold_ms": [300, 900] }
+    ]
+  },
+
+  "tree": [
+    { "$ref": "failsafe-random" },
+
+    { "if": { "image": "other_player_fighting_this_mob.png", "confidence": 0.85 },
+      "then": [ { "$ref": "conduct" } ],
+      "else": "continue" },
+
+    { "if": { "image": "menu_open.png" },
+      "then": [ { "$ref": "menu-navigation" } ],
+      "else": "continue" },
+
+    { "if": { "and": [
+        { "stat": ["health", "<", 30] },
+        { "not": { "image": "potion_cd.png" } }
+      ]},
+      "then": [ { "$ref": "emergency-survival" } ],
+      "else": [
+        { "if": { "image": "low_health_warning.png" },
+          "then": [ { "type": "key", "key": "2", "chance": 0.5 } ],
+          "else": "continue" }
+      ]},
+
+    { "if": { "image": "loot_icon.png", "confidence": 0.85,
+              "region": [0, 400, 1920, 1080] },
+      "then": [ { "$ref": "looting" } ],
+      "else": [ { "$ref": "idle-wander" } ] }
+  ]
+}

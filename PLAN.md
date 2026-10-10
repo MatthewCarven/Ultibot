@@ -259,10 +259,22 @@ RapidOCR (Phase 5) · `mcp` SDK (Phase 6) · Tkinter GUI (Phase 5) · venv.
   reference profile. Validator note: two-pass design so forward `$ref`s are
   legal; nested levels without failsafe-first *warn* (bubble-up reaches
   root) rather than error.
-- **1 — Eyes.** Capture, assets, template matching (variants, scales,
-  regions, masks), debug CLI.
-- **2 — Brain.** Condition tree, tree walker (default-else bubble-up,
-  failsafe groups), cooldowns, `chance`/`choose`/`random_key`, dry-run.
+- **1 — Eyes. ✅ DONE.** `eyes/capture.py` (mss, monitor + region grabs),
+  `eyes/match.py` (confidence, grayscale, multi-scale, regions, variants,
+  alpha masks — best hit across all options wins). CLI: `python -m ultibot
+  find <img> [--profile/--assets, --region, --grayscale, --scales,
+  --variants, --in file]` and `shot <out.png>`. 11 new tests (synthesized
+  frames, no screen needed), 32 total green. Templates that are themselves
+  saved grayscale work in both modes.
+- **2 — Brain. ✅ DONE.** `brain/conditions.py` (evaluator + injected
+  clock/RNG EngineState: cooldowns, timers, onces, vetoes, stat history),
+  `brain/tree.py` (walker: first-fired-stops, default-else bubble-up to
+  nearest failsafe level, failsafe ignores cooldowns/vetoes, question-crash
+  guard), `brain/engine.py` (loop + event formatting), `eyes/senses.py`
+  (LiveSenses: one grab per tick, missing templates warn-once = not-found).
+  CLI: `python -m ultibot run <profile> [--ticks N --verbose]` — dry-run,
+  no input. Groups gained `cooldown_ms` / `max_fires`; image conditions
+  gained `scales`; vetoes gained `ms`. 23 new tests, 55 total green.
 - **3 — Hands.** Executor, humanization, verify+retry+on_fail, macros,
   stuck detection.
 - **4 — Safety Shell.** Kill switch, failsafe, rate limiter, audit log.
